@@ -5,6 +5,7 @@
 #include "common/http/headers.h"
 #include "common/protobuf/utility.h"
 
+#include "extensions/filters/http/cache/cache_header_utility.h"
 #include "extensions/filters/http/cache/http_cache_utils.h"
 
 #include "absl/time/time.h"
@@ -31,7 +32,7 @@ LookupRequest::LookupRequest(const Http::HeaderMap& request_headers, SystemTime 
   // TODO(toddmgreer) Let config determine whether to include scheme, host, and
   // query params.
   // TODO(toddmgreer) get cluster name.
-  // TODO(toddmgreer) Parse Range header into request_range_spec_.
+  request_range_spec_ = HeaderUtility::getRanges(request_headers);
   key_.set_cluster_name("cluster_name_goes_here");
   key_.set_host(std::string(request_headers.Host()->value().getStringView()));
   key_.set_path(std::string(request_headers.Path()->value().getStringView()));

@@ -399,6 +399,44 @@ TEST(StringUtil, removeCharacters) {
   EXPECT_EQ("1256x", StringUtil::removeCharacters("0123456789x", removals));
 }
 
+
+void TestConsumeLeadingDigits(absl::string_view s, int64_t expected,
+                              absl::string_view remaining) {
+  uint64_t v;
+  absl::string_view input(s);
+  if (StringUtil::consumeLeadingDigits(&input, &v)) {
+    EXPECT_EQ(v, static_cast<uint64_t>(expected));
+    EXPECT_EQ(input, remaining);
+  } else {
+    EXPECT_LT(expected, 0);
+    EXPECT_EQ(input, remaining);
+  }
+}
+
+TEST(StringUtil, ConsumeLeadingDigits) {
+  TestConsumeLeadingDigits("123", 123, "");
+  TestConsumeLeadingDigits("a123", -1, "a123");
+  TestConsumeLeadingDigits("9_", 9, "_");
+  TestConsumeLeadingDigits("11111111111xyz", 11111111111ll, "xyz");
+
+  // Overflow case
+  TestConsumeLeadingDigits("1111111111111111111111111111111xyz",
+                           -1,
+                           "1111111111111111111111111111111xyz");
+
+  // 2^64
+  TestConsumeLeadingDigits("18446744073709551616xyz",
+                           -1,
+                           "18446744073709551616xyz");
+  // 2^64-1
+  TestConsumeLeadingDigits("18446744073709551615xyz",
+                           18446744073709551615ull,
+                           "xyz");
+  // (2^64-1)*10+9
+  TestConsumeLeadingDigits("184467440737095516159yz", -1,
+                           "184467440737095516159yz");
+}
+
 TEST(AccessLogDateTimeFormatter, fromTime) {
   SystemTime time1(std::chrono::seconds(1522796769));
   EXPECT_EQ("2018-04-03T23:06:09.000Z", AccessLogDateTimeFormatter::fromTime(time1));

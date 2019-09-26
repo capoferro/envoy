@@ -138,6 +138,8 @@ public:
   const LowerCaseString Path{":path"};
   const LowerCaseString Protocol{":protocol"};
   const LowerCaseString ProxyConnection{"proxy-connection"};
+  const LowerCaseString Range{"range"};
+  const LowerCaseString RangeUnit{"range-unit"};
   const LowerCaseString Referer{"referer"};
   const LowerCaseString RequestId{"x-request-id"};
   const LowerCaseString Scheme{":scheme"};

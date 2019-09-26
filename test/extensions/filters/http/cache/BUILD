@@ -55,3 +55,14 @@ envoy_extension_cc_test(
         "//test/test_common:utility_lib",
     ],
 )
+
+envoy_extension_cc_test(
+    name = "cache_header_utility_test",
+    srcs = ["cache_header_utility_test.cc"],
+    extension_name = "envoy.filters.http.cache",
+    deps = [
+        "//source/extensions/filters/http/cache:cache_header_utility_lib",
+        "//source/extensions/filters/http/cache:http_cache_lib",
+        "//test/test_common:utility_lib",
+    ],
+)

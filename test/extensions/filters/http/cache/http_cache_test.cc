@@ -16,7 +16,7 @@ class RawByteRangeTest : public testing::Test {};
 using RawByteRangeDeathTest = RawByteRangeTest;
 
 
-TEST_F(RawByteRangeTest, isSuffix) {
+TEST_F(RawByteRangeTest, IsSuffix) {
   auto r = RawByteRange(UINT64_MAX, 4);
   ASSERT_TRUE(r.isSuffix());
 }
@@ -28,12 +28,6 @@ TEST_F(RawByteRangeTest, IsNotSuffix) {
 
 TEST_F(RawByteRangeDeathTest, IllegalByteRange) {
   ASSERT_DEATH(RawByteRange(5, 4), "Illegal byte range");
-}
-
-TEST_F(RawByteRangeDeathTest, IllegalByteRangeButIsSuffix) {
-  // no death here
-  RawByteRange(UINT64_MAX, 3);
-  ASSERT_TRUE(true);
 }
 
 TEST_F(RawByteRangeTest, FirstBytePos) {
@@ -132,7 +126,7 @@ TEST_F(LookupRequestDeathTest, makeLookupRequestWithNoHost) {
 
 TEST_F(LookupRequestTest, makeLookupResult) {
   Http::HeaderMapPtr response_headers = Http::makeHeaderMap(
-      {{"date", formatter_.fromTime(current_time_)}, {"cache-control", "public, max-age=3600"}});
+      {{":method", "GET"}, {"date", formatter_.fromTime(current_time_)}, {"cache-control", "public, max-age=3600"}, {"range", "bytes=0-500"}});
   const LookupResult lookup_response =
       lookup_request_.makeLookupResult(std::move(response_headers), 0);
   EXPECT_EQ(CacheEntryStatus::Ok, lookup_response.cache_entry_status)
@@ -190,6 +184,15 @@ TEST_F(LookupRequestTest, NotExpiredViaFallbackheader) {
       lookup_request_.makeLookupResult(std::move(response_headers), 0);
 
   EXPECT_EQ(CacheEntryStatus::Ok, lookup_response.cache_entry_status);
+}
+
+TEST_F(LookupRequestTest, UnsatisfiableRangeResultNoRange) {
+  Http::HeaderMapPtr response_headers = Http::makeHeaderMap(
+      {{"date", formatter_.fromTime(current_time_)}, {"cache-control", "public, max-age=3600"}});
+  const LookupResult lookup_response =
+      lookup_request_.makeLookupResult(std::move(response_headers), 0);
+  EXPECT_EQ(CacheEntryStatus::Ok, lookup_response.cache_entry_status)
+      << formatter_.fromTime(current_time_);
 }
 
 } // namespace Cache
