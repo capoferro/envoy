@@ -330,6 +330,8 @@ private:
   HEADER_FUNC(Path)                                                                                \
   HEADER_FUNC(Protocol)                                                                            \
   HEADER_FUNC(ProxyConnection)                                                                     \
+  HEADER_FUNC(Range)                                                                               \
+  HEADER_FUNC(RangeUnit)                                                                           \
   HEADER_FUNC(Referer)                                                                             \
   HEADER_FUNC(RequestId)                                                                           \
   HEADER_FUNC(Scheme)                                                                              \

@@ -383,6 +383,14 @@ public:
    */
   static std::string removeCharacters(const absl::string_view& str,
                                       const IntervalSet<size_t>& remove_characters);
+
+  /**
+   * Consume a leading positive integer value. If any digits were found, store
+   * the value of the leading unsigned number in "*val", advance "*s" past the
+   * consumed number, and return true. If overflow occurred, returns false.
+   * Otherwise, returns false.
+   */
+  static bool consumeLeadingDigits(absl::string_view* s, uint64_t* val);
 };
 
 /**

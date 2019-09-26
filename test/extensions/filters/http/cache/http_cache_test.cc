@@ -21,8 +21,11 @@ protected:
 };
 
 TEST_F(LookupRequestTest, makeLookupResult) {
-  Http::HeaderMapPtr response_headers = Http::makeHeaderMap(
-      {{"date", formatter_.fromTime(current_time_)}, {"cache-control", "public, max-age=3600"}});
+  Http::HeaderMapPtr response_headers =
+      Http::makeHeaderMap({{":method", "GET"},
+                           {"date", formatter_.fromTime(current_time_)},
+                           {"cache-control", "public, max-age=3600"},
+                           {"range", "bytes=0-500"}});
   const LookupResult lookup_response =
       lookup_request_.makeLookupResult(std::move(response_headers), 0);
   EXPECT_EQ(CacheEntryStatus::Ok, lookup_response.cache_entry_status)

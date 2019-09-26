@@ -486,6 +486,33 @@ std::string StringUtil::removeCharacters(const absl::string_view& str,
   return absl::StrJoin(pieces, "");
 }
 
+bool StringUtil::consumeLeadingDigits(absl::string_view* s, uint64_t* val) {
+  const char* p = s->data();
+  const char* limit = p + s->size();
+  uint64_t v = 0;
+  while (p < limit) {
+    const char c = *p;
+    if (c < '0' || c > '9') {
+      break;
+    }
+    uint64_t new_v = (v * 10) + (c - '0');
+    if (new_v / 8 < v) {
+      // Overflow occurred
+      return false;
+    }
+    v = new_v;
+    p++;
+  }
+  if (p > s->data()) {
+    // Consume some digits
+    s->remove_prefix(p - s->data());
+    *val = v;
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool Primes::isPrime(uint32_t x) {
   if (x < 4) {
     return true; // eliminates special-casing 2.
