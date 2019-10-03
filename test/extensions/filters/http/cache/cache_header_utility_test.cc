@@ -104,7 +104,11 @@ INSTANTIATE_TEST_SUITE_P(
                     std::make_tuple("bytes", "other=1-2"),
                     std::make_tuple("",      "bytes=1-2"),
                     std::make_tuple("other", "bytes=1-2"),
-                    std::make_tuple("bytes", "bytes=1000-1000,1001-1001,1002-1002,1003-1003,1004-1004,1005-1005,1006-1006,1007-1007,1008-1008,1000-")));
+                    std::make_tuple("bytes", "bytes=1000-1000,1001-1001,1002-1002,1003-1003,1004-1004,1005-1005,1006-1006,1007-1007,1008-1008,1000-"),
+                    // UINT64_MAX-UINT64_MAX+1
+                    std::make_tuple("bytes", "bytes=18446744073709551615-18446744073709551616"),
+                    // UINT64_MAX+1-UINT64_MAX+2
+                    std::make_tuple("bytes", "bytes=18446744073709551616-18446744073709551617")));
 // clang-format on
 
 TEST_P(ParseInvalidRangeHeaderTest, InvalidRangeReturnsEmpty) {
@@ -157,6 +161,16 @@ TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValueMultipleRanges) {
 TEST_F(CacheHeaderUtilityTest, parseLongRangeHeaderValue) {
   auto result_vector = CacheHeaderUtility::parseRangeHeaderValue("bytes", "bytes=1000-1000,1001-1001,1002-1002,1003-1003,1004-1004,1005-1005,1006-1006,1007-1007,1008-1008,100-");
   ASSERT_EQ(10, result_vector.size());
+}
+
+TEST_F(CacheHeaderUtilityTest, parseUint64MaxBytes) {
+  // UINT64_MAX-1 - UINT64_MAX
+  // Note: UINT64_MAX is a sentry value for suffixes in the first value, so we
+  // do not support UINT64_MAX as a first bytes value.
+  auto result_vector = CacheHeaderUtility::parseRangeHeaderValue("bytes", "bytes=18446744073709551614-18446744073709551615");
+  ASSERT_EQ(1, result_vector.size());
+  ASSERT_EQ(18446744073709551614, result_vector[0].firstBytePos());
+  ASSERT_EQ(18446744073709551615, result_vector[0].lastBytePos());
 }
 
 } // namespace Cache
