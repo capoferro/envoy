@@ -103,7 +103,8 @@ INSTANTIATE_TEST_SUITE_P(
                     std::make_tuple("bytes", "bytes=1-2,3-4,a"),
                     std::make_tuple("bytes", "other=1-2"),
                     std::make_tuple("",      "bytes=1-2"),
-                    std::make_tuple("other", "bytes=1-2")));
+                    std::make_tuple("other", "bytes=1-2"),
+                    std::make_tuple("bytes", "bytes=1000-1000,1001-1001,1002-1002,1003-1003,1004-1004,1005-1005,1006-1006,1007-1007,1008-1008,1000-")));
 // clang-format on
 
 TEST_P(ParseInvalidRangeHeaderTest, InvalidRangeReturnsEmpty) {
@@ -151,6 +152,11 @@ TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValueMultipleRanges) {
   ASSERT_EQ(50, result_vector[2].lastBytePos());
 
   ASSERT_EQ(1, result_vector[3].suffixLength());
+}
+
+TEST_F(CacheHeaderUtilityTest, parseLongRangeHeaderValue) {
+  auto result_vector = CacheHeaderUtility::parseRangeHeaderValue("bytes", "bytes=1000-1000,1001-1001,1002-1002,1003-1003,1004-1004,1005-1005,1006-1006,1007-1007,1008-1008,100-");
+  ASSERT_EQ(10, result_vector.size());
 }
 
 } // namespace Cache

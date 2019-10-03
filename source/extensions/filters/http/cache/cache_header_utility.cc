@@ -58,6 +58,10 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
 
 std::vector<RawByteRange> CacheHeaderUtility::parseRangeHeaderValue(absl::string_view range_unit,
                                                                absl::string_view range) {
+  // Prevent DoS attacks with excessively long range strings.
+  if (range.length() > 100) {
+    return {};
+  }
   if (range_unit.empty() || !absl::ConsumePrefix(&range, range_unit) ||
       !absl::ConsumePrefix(&range, "=")) {
     return {};
