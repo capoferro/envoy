@@ -14,9 +14,7 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Cache {
 
-class CacheHeaderUtilityTest : public testing::Test {};
-
-TEST_F(CacheHeaderUtilityTest, getRanges) {
+TEST(CacheHeaderUtilityTest, getRanges) {
   Http::TestHeaderMapImpl headers{{":method", "GET"}, {"range", "bytes=0-4"}};
   auto result_vector = CacheHeaderUtility::getRanges(headers);
   ASSERT_EQ(1, result_vector.size());
@@ -25,7 +23,7 @@ TEST_F(CacheHeaderUtilityTest, getRanges) {
   ASSERT_EQ(4, result.lastBytePos());
 }
 
-TEST_F(CacheHeaderUtilityTest, getRangesWithRangeUnit) {
+TEST(CacheHeaderUtilityTest, getRangesWithRangeUnit) {
   Http::TestHeaderMapImpl headers{
       {":method", "GET"}, {"range", "other=0-4"}, {"range-unit", "other"}};
   auto result_vector = CacheHeaderUtility::getRanges(headers);
@@ -116,7 +114,7 @@ TEST_P(ParseInvalidRangeHeaderTest, InvalidRangeReturnsEmpty) {
   ASSERT_EQ(0, result_vector.size());
 }
 
-TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValue) {
+TEST(CacheHeaderUtilityTest, parseRangeHeaderValue) {
   auto result_vector =
       CacheHeaderUtility::parseRangeHeaderValue("bytes", absl::string_view("bytes=500-999"));
   ASSERT_EQ(1, result_vector.size());
@@ -125,7 +123,7 @@ TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValue) {
   ASSERT_EQ(999, result.lastBytePos());
 }
 
-TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValueSuffix) {
+TEST(CacheHeaderUtilityTest, parseRangeHeaderValueSuffix) {
   auto result_vector =
       CacheHeaderUtility::parseRangeHeaderValue("bytes", absl::string_view("bytes=-500"));
   ASSERT_EQ(1, result_vector.size());
@@ -133,7 +131,7 @@ TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValueSuffix) {
   ASSERT_EQ(500, result.suffixLength());
 }
 
-TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValueSuffixAlt) {
+TEST(CacheHeaderUtilityTest, parseRangeHeaderValueSuffixAlt) {
   auto result_vector =
       CacheHeaderUtility::parseRangeHeaderValue("bytes", absl::string_view("bytes=500-"));
   ASSERT_EQ(1, result_vector.size());
@@ -141,7 +139,7 @@ TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValueSuffixAlt) {
   ASSERT_EQ(500, result.suffixLength());
 }
 
-TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValueMultipleRanges) {
+TEST(CacheHeaderUtilityTest, parseRangeHeaderValueMultipleRanges) {
   auto result_vector =
       CacheHeaderUtility::parseRangeHeaderValue("bytes", "bytes=10-20,30-40,50-50,-1");
   ASSERT_EQ(4, result_vector.size());
@@ -158,12 +156,12 @@ TEST_F(CacheHeaderUtilityTest, parseRangeHeaderValueMultipleRanges) {
   ASSERT_EQ(1, result_vector[3].suffixLength());
 }
 
-TEST_F(CacheHeaderUtilityTest, parseLongRangeHeaderValue) {
+TEST(CacheHeaderUtilityTest, parseLongRangeHeaderValue) {
   auto result_vector = CacheHeaderUtility::parseRangeHeaderValue("bytes", "bytes=1000-1000,1001-1001,1002-1002,1003-1003,1004-1004,1005-1005,1006-1006,1007-1007,1008-1008,100-");
   ASSERT_EQ(10, result_vector.size());
 }
 
-TEST_F(CacheHeaderUtilityTest, parseUint64MaxBytes) {
+TEST(CacheHeaderUtilityTest, parseUint64MaxBytes) {
   // UINT64_MAX-1 - UINT64_MAX
   // Note: UINT64_MAX is a sentry value for suffixes in the first value, so we
   // do not support UINT64_MAX as a first bytes value.
