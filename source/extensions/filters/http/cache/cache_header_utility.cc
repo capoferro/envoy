@@ -66,15 +66,19 @@ std::vector<RawByteRange> CacheHeaderUtility::parseRangeHeaderValue(absl::string
   std::vector<RawByteRange> ranges;
   while (!range.empty()) {
     uint64_t first, last;
-    if (!StringUtil::consumeLeadingDigits(&range, &first)) {
-      if (!absl::ConsumePrefix(&range, "-")) {
+    if (absl::ConsumePrefix(&range, "-")) {
+      first = UINT64_MAX;
+    } else if (!StringUtil::consumeLeadingDigits(&range, &first)) {
+      ranges.clear();
+      break;
+    }
+
+    if (absl::ConsumePrefix(&range, "-")) {
+      if (first == UINT64_MAX) {
         ranges.clear();
         break;
       }
-      first = UINT64_MAX;
-    }
-
-    if (!absl::ConsumePrefix(&range, "-")) {
+    } else {
       if (!StringUtil::consumeLeadingDigits(&range, &first)) {
         ranges.clear();
         break;
