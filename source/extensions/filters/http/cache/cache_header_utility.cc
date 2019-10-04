@@ -17,32 +17,16 @@ namespace HttpFilters {
 namespace Cache {
 
 namespace {
-const absl::string_view bytes_{"bytes"};
+const std::string bytes_{"bytes"};
 }
 
 std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& request_headers) {
-  if (request_headers.Method() == nullptr ||
-      request_headers.Method()->value().getStringView() != Http::Headers::get().MethodValues.Get) {
-    // Range headers are only valid on GET requests so don't bother parsing
-    // range if we're not going to use it.
-    return {};
-  }
+  // Range headers are only valid on GET requests so make sure we don't get here
+  // with another type of request.
+  ASSERT(request_headers.Method() != nullptr && request_headers.Method()->value() == Http::Headers::get().MethodValues.Get);
 
-  // Multiple instances of range/range-unit headers are considered invalid.
+  // Multiple instances of range headers are considered invalid.
   // https://tools.ietf.org/html/rfc7230#section-3.2.2
-  // TODO: should we log when encountering multiple headers?
-  std::vector<absl::string_view> range_unit_headers;
-  Http::HeaderUtility::getAllOfHeader(request_headers, Http::Headers::get().RangeUnit.get(),
-                                      range_unit_headers);
-  absl::string_view range_unit;
-  if (range_unit_headers.size() == 1) {
-    range_unit = range_unit_headers.front();
-  } else if (range_unit_headers.empty()) {
-    range_unit = bytes_;
-  } else {
-    return {};
-  }
-
   std::vector<absl::string_view> range_headers;
   Http::HeaderUtility::getAllOfHeader(request_headers, Http::Headers::get().Range.get(),
                                       range_headers);
@@ -53,16 +37,11 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
     return {};
   }
 
-  return parseRangeHeaderValue(range_unit, range);
-}
-
-std::vector<RawByteRange> CacheHeaderUtility::parseRangeHeaderValue(absl::string_view range_unit,
-                                                               absl::string_view range) {
   // Prevent DoS attacks with excessively long range strings.
   if (range.length() > 100) {
     return {};
   }
-  if (range_unit.empty() || !absl::ConsumePrefix(&range, range_unit) ||
+  if (!absl::ConsumePrefix(&range, bytes_) ||
       !absl::ConsumePrefix(&range, "=")) {
     return {};
   }
