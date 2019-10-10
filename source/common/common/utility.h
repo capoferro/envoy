@@ -385,12 +385,12 @@ public:
                                       const IntervalSet<size_t>& remove_characters);
 
   /**
-   * Consume a leading positive integer value. If any digits were found, store
-   * the value of the leading unsigned number in "*val", advance "*s" past the
-   * consumed number, and return true. If overflow occurred, returns false.
-   * Otherwise, returns false.
+   * Read a leading positive integer value. If any digits were found, store the
+   * value, advance "*s" past the consumed number, and return the populated
+   * optional. If overflow occurred, or no digits exist, return an empty
+   * optional.
    */
-  static bool consumeLeadingDigits(absl::string_view* s, uint64_t* val);
+  static absl::optional<uint64_t> readAndRemoveLeadingDigits(absl::string_view& s);
 };
 
 /**

@@ -400,10 +400,10 @@ TEST(StringUtil, removeCharacters) {
 }
 
 void TestConsumeLeadingDigits(absl::string_view s, int64_t expected, absl::string_view remaining) {
-  uint64_t v;
   absl::string_view input(s);
-  if (StringUtil::consumeLeadingDigits(&input, &v)) {
-    EXPECT_EQ(v, static_cast<uint64_t>(expected));
+  auto output = StringUtil::readAndRemoveLeadingDigits(input);
+  if (output) {
+    EXPECT_EQ(output, static_cast<uint64_t>(expected));
     EXPECT_EQ(input, remaining);
   } else {
     EXPECT_LT(expected, 0);
@@ -429,8 +429,6 @@ TEST(StringUtil, ConsumeLeadingDigits) {
   TestConsumeLeadingDigits("184467440737095516159yz", -1, "184467440737095516159yz");
 }
 
-// TODO: this takes ~20x the time to run as the rest of the suite. Should this
-// be tagged differently so it runs under different test flags?
 TEST(StringUtil, ConsumeLeadingDigitsExhaustive) {
   // Pseudo-exhaustive test.
   // We run through every possible 16-20 digit number, where the middle
@@ -454,10 +452,10 @@ TEST(StringUtil, ConsumeLeadingDigitsExhaustive) {
       uint64_t expected = hi4 * 100000000000000 + mid2 * 1010101010101;
       if (mid2 == 100) expected = hi4 * 100000000000000 + 67440737095516;
 
-      uint64_t v = 0;
       absl::string_view input(buf);
-      EXPECT_TRUE(StringUtil::consumeLeadingDigits(&input, &v)) << " given " << buf;
-      EXPECT_EQ(expected, v);
+      absl::optional<uint64_t> output = StringUtil::readAndRemoveLeadingDigits(input);
+      EXPECT_TRUE(output) << " given " << buf;
+      EXPECT_EQ(expected, output);
       EXPECT_EQ(0, input.size());
 
       // To save time, use the leading digits over and over again, hand-placing
@@ -474,26 +472,25 @@ TEST(StringUtil, ConsumeLeadingDigitsExhaustive) {
         write[0] = '0' + lo2 / 10;
         write[1] = '0' + lo2 % 10;
         write[2] = '\0';
-        uint64_t big_v = 0;
         absl::string_view big_input(buf);
         uint64_t big_expected = expected * 100 + lo2;
         if (big_input == "18446744073709551616") saw_264 = true;
         if (big_input == "18446744073709551615") saw_264_minus_1 = true;
+        absl::optional<uint64_t> big_output;
         if (big_expected / 100 != expected) {  // overflow
-          EXPECT_FALSE(StringUtil::consumeLeadingDigits(&big_input, &big_v))
-              << " given overflowing " << buf;
+          big_output = StringUtil::readAndRemoveLeadingDigits(big_input);
+          EXPECT_FALSE(big_output) << " given overflowing " << buf;
         } else {
-          EXPECT_TRUE(StringUtil::consumeLeadingDigits(&big_input, &big_v)) << " given "
-                                                                << buf;
-          EXPECT_EQ(big_expected, big_v) << " given " << buf;
+          big_output = StringUtil::readAndRemoveLeadingDigits(big_input);
+          EXPECT_TRUE(big_output) << " given " << buf;
+          EXPECT_EQ(big_expected, big_output) << " given " << buf;
           EXPECT_EQ(0, big_input.size());
           write[2] = 'X';
           write[3] = '\0';
           big_input = buf;
-          big_v = -1;
-          EXPECT_TRUE(StringUtil::consumeLeadingDigits(&big_input, &big_v)) << " given "
-                                                                << buf;
-          EXPECT_EQ(big_expected, big_v) << " given " << buf;
+          big_output = StringUtil::readAndRemoveLeadingDigits(big_input);
+          EXPECT_TRUE(big_output) << " given " << buf;
+          EXPECT_EQ(big_expected, big_output) << " given " << buf;
           EXPECT_EQ(1, big_input.size());
         }
       }
