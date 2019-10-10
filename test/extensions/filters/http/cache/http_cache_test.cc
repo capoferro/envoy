@@ -16,14 +16,13 @@ protected:
   SystemTime current_time_ = time_source_.systemTime();
   DateFormatter formatter_{"%a, %d %b %Y %H:%M:%S GMT"};
   const Http::TestHeaderMapImpl request_headers_{
-      {":path", "/"}, {":scheme", "http"}, {":authority", "example.com"}};
+    {":method", "GET"}, {":path", "/"}, {":scheme", "http"}, {":authority", "example.com"}};
   const LookupRequest lookup_request_{request_headers_, current_time_};
 };
 
 TEST_F(LookupRequestTest, makeLookupResult) {
   Http::HeaderMapPtr response_headers =
-      Http::makeHeaderMap({{":method", "GET"},
-                           {"date", formatter_.fromTime(current_time_)},
+      Http::makeHeaderMap({{"date", formatter_.fromTime(current_time_)},
                            {"cache-control", "public, max-age=3600"},
                            {"range", "bytes=0-500"}});
   const LookupResult lookup_response =

@@ -35,12 +35,39 @@ TEST_P(HttpTimeTest, Ok) {
 
 TEST(HttpTime, Null) { EXPECT_EQ(httpTime(nullptr), SystemTime()); }
 
-TEST(EffectiveMaxAge, Ok) {
-  EXPECT_EQ(std::chrono::seconds(3600), effectiveMaxAge("public, max-age=3600"));
-}
-
 TEST(EffectiveMaxAge, NegativeMaxAge) {
   EXPECT_EQ(SystemTime::duration::zero(), effectiveMaxAge("public, max-age=-1"));
+}
+
+class EffectiveMaxAgeTest : public testing::TestWithParam<std::tuple<std::string, SystemTime::duration>> {
+ protected:
+  std::string date_header_{std::get<0>(GetParam())};
+  SystemTime::duration expected_duration() { return std::get<1>(GetParam()); };
+};
+
+const std::tuple<std::string, SystemTime::duration> effective_max_age_strings[] = {
+  {"public, max-age=3600", std::chrono::seconds(3600)},
+  {"public, max-age=3600,", std::chrono::seconds(3600)}, // todo: valid?
+  {"public, max-age=-1", SystemTime::duration::zero()},
+  {"public, max-age=3600z", SystemTime::duration::zero()},
+  {"public, max-age=", SystemTime::duration::zero()},
+  {"public, max-age=", SystemTime::duration::zero()},
+  // INT64_MAX+1
+  {"public, max-age=9223372036854775808", SystemTime::duration::max()},
+  // INT64_MAX+1 + unexpected character
+  {"public, max-age=9223372036854775808z", SystemTime::duration::zero()},
+  // UINT64_MAX+1
+  {"public, max-age=18446744073709551616", SystemTime::duration::max()},
+  {"public, max-age=18446744073709551616,", SystemTime::duration::max()}, // todo: valid?
+  // UINT64_MAX+1 + unexpected character
+  {"public, max-age=18446744073709551616z", SystemTime::duration::zero()},
+  {"public", SystemTime::duration::zero()}
+};
+
+INSTANTIATE_TEST_SUITE_P(Ok, EffectiveMaxAgeTest, testing::ValuesIn(effective_max_age_strings));
+
+TEST_P(EffectiveMaxAgeTest, All) {
+  EXPECT_EQ(expected_duration(), effectiveMaxAge(date_header_));
 }
 
 } // namespace

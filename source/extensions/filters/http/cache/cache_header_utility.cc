@@ -23,7 +23,8 @@ const std::string bytes_{"bytes"};
 std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& request_headers) {
   // Range headers are only valid on GET requests so make sure we don't get here
   // with another type of request.
-  ASSERT(request_headers.Method() != nullptr && request_headers.Method()->value() == Http::Headers::get().MethodValues.Get);
+  ASSERT(request_headers.Method() != nullptr &&
+         request_headers.Method()->value() == Http::Headers::get().MethodValues.Get);
 
   // Multiple instances of range headers are considered invalid.
   // https://tools.ietf.org/html/rfc7230#section-3.2.2
@@ -48,12 +49,16 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
 
   std::vector<RawByteRange> ranges;
   while (!range.empty()) {
-    uint64_t first, last;
+    absl::optional<uint64_t> first;
+    absl::optional<uint64_t> last;
     if (absl::ConsumePrefix(&range, "-")) {
       first = UINT64_MAX;
-    } else if (!StringUtil::consumeLeadingDigits(&range, &first)) {
-      ranges.clear();
-      break;
+    } else {
+      first = StringUtil::readAndRemoveLeadingDigits(range);
+      if (!first) {
+        ranges.clear();
+        break;
+      }
     }
 
     if (absl::ConsumePrefix(&range, "-")) {
@@ -62,13 +67,15 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
         break;
       }
     } else {
-      if (!StringUtil::consumeLeadingDigits(&range, &first)) {
+      first = StringUtil::readAndRemoveLeadingDigits(range);
+      if (!first) {
         ranges.clear();
         break;
       }
     }
 
-    if (!StringUtil::consumeLeadingDigits(&range, &last)) {
+    last = StringUtil::readAndRemoveLeadingDigits(range);
+    if (!last) {
       if (!range.empty()) {
         ranges.clear();
         break;
@@ -77,7 +84,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
       first = UINT64_MAX;
     }
 
-    ranges.push_back(RawByteRange(first, last));
+    ranges.push_back(RawByteRange(first.value(), last.value()));
 
     if (!absl::ConsumePrefix(&range, ",") && !range.empty()) {
       ranges.clear();
