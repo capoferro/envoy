@@ -26,6 +26,7 @@ namespace Logger {
   FUNCTION(aws)                  \
   FUNCTION(assert)               \
   FUNCTION(backtrace)            \
+  FUNCTION(cache)                \
   FUNCTION(client)               \
   FUNCTION(config)               \
   FUNCTION(connection)           \
@@ -323,6 +324,10 @@ protected:
 
 /**
  * Convenience macro to get logger.
+ *
+ *(Note: Ensure you either use ENVOY_LOG_MISC(debug, FORMATSTRING, ...) for ad-hoc debug logs or
+ * have your class inherit from Logger::Loggable<Logger::Id::some_logger_id> to ensure
+ * __log_do_not_use_read_comment() does not cause a macro expansion error due to not being defined.)
  */
 #define ENVOY_LOGGER() __log_do_not_use_read_comment()
 

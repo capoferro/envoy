@@ -35,15 +35,18 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
   if (range_headers.size() == 1) {
     range = range_headers.front();
   } else {
+    ENVOY_LOG(debug, "Multiple range headers provided in request. Ignoring. {}", "foo");
     return {};
   }
 
   // Prevent DoS attacks with excessively long range strings.
   if (range.length() > 100) {
+    ENVOY_LOG(debug, "Excessively long range header. Ignoring.");
     return {};
   }
   if (!absl::ConsumePrefix(&range, bytes_) ||
       !absl::ConsumePrefix(&range, "=")) {
+    ENVOY_LOG(debug, "Invalid range header. range-unit not correctly specified.");
     return {};
   }
 
@@ -56,6 +59,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
     } else {
       first = StringUtil::readAndRemoveLeadingDigits(range);
       if (!first) {
+        ENVOY_LOG(debug, "Invalid characters in range header.");
         ranges.clear();
         break;
       }
@@ -63,12 +67,14 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
 
     if (absl::ConsumePrefix(&range, "-")) {
       if (first == UINT64_MAX) {
+        ENVOY_LOG(debug, "Unexpected '-' in range header.");
         ranges.clear();
         break;
       }
     } else {
       first = StringUtil::readAndRemoveLeadingDigits(range);
       if (!first) {
+        ENVOY_LOG(debug, "Expected suffix-length in range header after '-', but it was not provided.");
         ranges.clear();
         break;
       }
@@ -77,6 +83,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
     last = StringUtil::readAndRemoveLeadingDigits(range);
     if (!last) {
       if (!range.empty()) {
+        ENVOY_LOG(debug, "Unexpected characters at the end of range header.");
         ranges.clear();
         break;
       }
@@ -87,6 +94,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
     ranges.push_back(RawByteRange(first.value(), last.value()));
 
     if (!absl::ConsumePrefix(&range, ",") && !range.empty()) {
+      ENVOY_LOG(debug, "Unexpected characters at the end of range header.");
       ranges.clear();
       break;
     }

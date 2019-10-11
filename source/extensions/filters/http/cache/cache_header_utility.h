@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/common/logger.h"
 #include "common/http/header_map_impl.h"
 
 namespace Envoy {
@@ -37,15 +38,11 @@ private:
   uint64_t last_byte_pos_;
 };
 
-class CacheHeaderUtility {
+class CacheHeaderUtility : Logger::Loggable<Logger::Id::cache> {
 public:
   // Get ranges defined by range-related headers in the provided request
   // headers.
   static std::vector<RawByteRange> getRanges(const Http::HeaderMap& request_headers);
-  // Parse range header value to produce RawByteRange objects for each byte
-  // range.
-  static std::vector<RawByteRange> parseRangeHeaderValue(absl::string_view range_unit,
-                                                         absl::string_view range);
 };
 
 } // namespace Cache
