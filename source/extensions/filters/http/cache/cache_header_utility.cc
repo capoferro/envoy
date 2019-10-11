@@ -44,8 +44,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
     ENVOY_LOG(debug, "Excessively long range header. Ignoring.");
     return {};
   }
-  if (!absl::ConsumePrefix(&range, bytes_) ||
-      !absl::ConsumePrefix(&range, "=")) {
+  if (!absl::ConsumePrefix(&range, bytes_) || !absl::ConsumePrefix(&range, "=")) {
     ENVOY_LOG(debug, "Invalid range header. range-unit not correctly specified.");
     return {};
   }
@@ -74,7 +73,8 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
     } else {
       first = StringUtil::readAndRemoveLeadingDigits(range);
       if (!first) {
-        ENVOY_LOG(debug, "Expected suffix-length in range header after '-', but it was not provided.");
+        ENVOY_LOG(debug,
+                  "Expected suffix-length in range header after '-', but it was not provided.");
         ranges.clear();
         break;
       }
