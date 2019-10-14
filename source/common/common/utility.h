@@ -385,10 +385,9 @@ public:
                                       const IntervalSet<size_t>& remove_characters);
 
   /**
-   * Read a leading positive integer value. If any digits were found, store the
+   * Read a leading positive decimal value. If any digits were found, store the
    * value, advance "*s" past the consumed number, and return the populated
-   * optional. If overflow occurred, or no digits exist, return an empty
-   * optional.
+   * optional. If overflow occurred, or no digits exist, return nullopt.
    */
   static absl::optional<uint64_t> readAndRemoveLeadingDigits(absl::string_view& s);
 };

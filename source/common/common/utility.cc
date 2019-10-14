@@ -487,7 +487,6 @@ std::string StringUtil::removeCharacters(const absl::string_view& str,
 }
 
 absl::optional<uint64_t> StringUtil::readAndRemoveLeadingDigits(absl::string_view& s) {
-  absl::optional<uint64_t> output;
   const char* p = s.data();
   const char* limit = p + s.size();
   uint64_t val = 0;
@@ -499,7 +498,7 @@ absl::optional<uint64_t> StringUtil::readAndRemoveLeadingDigits(absl::string_vie
     uint64_t new_val = (val * 10) + (c - '0');
     if (new_val / 8 < val) {
       // Overflow occurred
-      return output;
+      return absl::nullopt;
     }
     val = new_val;
     p++;
@@ -508,9 +507,9 @@ absl::optional<uint64_t> StringUtil::readAndRemoveLeadingDigits(absl::string_vie
   if (p > s.data()) {
     // Consume some digits
     s.remove_prefix(p - s.data());
-    output = val;
+    return val;
   }
-  return output;
+  return absl::nullopt;
 }
 
 bool Primes::isPrime(uint32_t x) {
