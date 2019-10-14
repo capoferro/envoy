@@ -399,7 +399,7 @@ TEST(StringUtil, removeCharacters) {
   EXPECT_EQ("1256x", StringUtil::removeCharacters("0123456789x", removals));
 }
 
-void TestConsumeLeadingDigits(absl::string_view s, int64_t expected, absl::string_view remaining) {
+void TestReadAndRemoveLeadingDigits(absl::string_view s, int64_t expected, absl::string_view remaining) {
   absl::string_view input(s);
   auto output = StringUtil::readAndRemoveLeadingDigits(input);
   if (output) {
@@ -411,25 +411,25 @@ void TestConsumeLeadingDigits(absl::string_view s, int64_t expected, absl::strin
   }
 }
 
-TEST(StringUtil, ConsumeLeadingDigits) {
-  TestConsumeLeadingDigits("123", 123, "");
-  TestConsumeLeadingDigits("a123", -1, "a123");
-  TestConsumeLeadingDigits("9_", 9, "_");
-  TestConsumeLeadingDigits("11111111111xyz", 11111111111ll, "xyz");
+TEST(StringUtil, ReadAndRemoveLeadingDigits) {
+  TestReadAndRemoveLeadingDigits("123", 123, "");
+  TestReadAndRemoveLeadingDigits("a123", -1, "a123");
+  TestReadAndRemoveLeadingDigits("9_", 9, "_");
+  TestReadAndRemoveLeadingDigits("11111111111xyz", 11111111111ll, "xyz");
 
   // Overflow case
-  TestConsumeLeadingDigits("1111111111111111111111111111111xyz", -1,
+  TestReadAndRemoveLeadingDigits("1111111111111111111111111111111xyz", -1,
                            "1111111111111111111111111111111xyz");
 
   // 2^64
-  TestConsumeLeadingDigits("18446744073709551616xyz", -1, "18446744073709551616xyz");
+  TestReadAndRemoveLeadingDigits("18446744073709551616xyz", -1, "18446744073709551616xyz");
   // 2^64-1
-  TestConsumeLeadingDigits("18446744073709551615xyz", 18446744073709551615ull, "xyz");
+  TestReadAndRemoveLeadingDigits("18446744073709551615xyz", 18446744073709551615ull, "xyz");
   // (2^64-1)*10+9
-  TestConsumeLeadingDigits("184467440737095516159yz", -1, "184467440737095516159yz");
+  TestReadAndRemoveLeadingDigits("184467440737095516159yz", -1, "184467440737095516159yz");
 }
 
-TEST(StringUtil, ConsumeLeadingDigitsExhaustive) {
+TEST(StringUtil, ReadAndRemoveLeadingDigitsExhaustive) {
   // Pseudo-exhaustive test.
   // We run through every possible 16-20 digit number, where the middle
   // 14 digits consist of the same 2 digits repeated 7 times, as well as

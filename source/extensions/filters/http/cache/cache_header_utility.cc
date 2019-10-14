@@ -22,7 +22,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
   ASSERT(request_headers.Method() != nullptr);
   ASSERT(request_headers.Method()->value() == Http::Headers::get().MethodValues.Get);
 
-  // Multiple instances of range headers are considered invalid.
+  // Multiple instances of range headers are invalid.
   // https://tools.ietf.org/html/rfc7230#section-3.2.2
   std::vector<absl::string_view> range_headers;
   Http::HeaderUtility::getAllOfHeader(request_headers, Http::Headers::get().Range.get(),
@@ -31,7 +31,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
   if (range_headers.size() == 1) {
     range = range_headers.front();
   } else {
-    ENVOY_LOG(debug, "Multiple range headers provided in request. Ignoring. {}", "foo");
+    ENVOY_LOG(debug, "Multiple range headers provided in request. Ignoring.");
     return {};
   }
 
