@@ -47,53 +47,30 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
 
   std::vector<RawByteRange> ranges;
   while (!range.empty()) {
-    absl::optional<uint64_t> first;
-    absl::optional<uint64_t> last;
-    if (absl::ConsumePrefix(&range, "-")) {
+    absl::optional<uint64_t> first = StringUtil::readAndRemoveLeadingDigits(range);
+    if (!first) {
       first = UINT64_MAX;
-    } else {
-      first = StringUtil::readAndRemoveLeadingDigits(range);
-      if (!first) {
-        ENVOY_LOG(debug, "Invalid characters in range header.");
-        ranges.clear();
-        break;
-      }
     }
-
-    if (absl::ConsumePrefix(&range, "-")) {
-      if (first == UINT64_MAX) {
-        ENVOY_LOG(debug, "Unexpected '-' in range header.");
-        ranges.clear();
-        break;
-      }
-    } else {
-      first = StringUtil::readAndRemoveLeadingDigits(range);
-      if (!first) {
-        ENVOY_LOG(debug,
-                  "Expected suffix-length in range header after '-', but it was not provided.");
-        ranges.clear();
-        break;
-      }
+    if (!absl::ConsumePrefix(&range, "-")) {
+      ranges.clear();
+      break;
     }
-
-    last = StringUtil::readAndRemoveLeadingDigits(range);
+    absl::optional<uint64_t> last = StringUtil::readAndRemoveLeadingDigits(range);
     if (!last) {
-      if (!range.empty()) {
-        ENVOY_LOG(debug, "Unexpected characters at the end of range header.");
-        ranges.clear();
-        break;
-      }
       last = first;
       first = UINT64_MAX;
     }
-
-    ranges.push_back(RawByteRange(first.value(), last.value()));
-
-    if (!absl::ConsumePrefix(&range, ",") && !range.empty()) {
+    if (first != UINT64_MAX && last < first) {
+      ranges.clear();
+      break;
+    }
+    if (!range.empty() && !absl::ConsumePrefix(&range, ",")) {
       ENVOY_LOG(debug, "Unexpected characters at the end of range header.");
       ranges.clear();
       break;
     }
+
+    ranges.push_back(RawByteRange(first.value(), last.value()));
   }
 
   return ranges;
