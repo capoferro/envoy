@@ -1,5 +1,4 @@
 #include "extensions/filters/http/cache/http_cache_utils.h"
-#include "common/common/utility.h"
 
 #include <array>
 #include <string>
@@ -89,38 +88,15 @@ void eatDirectiveArgument(absl::string_view& s) {
 // SystemTime::duration::zero(). If parsing overflows, returns
 // SystemTime::duration::max().
 SystemTime::duration eatLeadingDuration(absl::string_view& s) {
-  absl::optional<uint64_t> n = StringUtil::readAndRemoveLeadingDigits(s);
-  SystemTime::duration duration = SystemTime::duration::zero();
-  if (n) {
-    int64_t signed_n = static_cast<int64_t>(n.value());
-    if (signed_n < 0) {
-      duration = SystemTime::duration::max();
-    } else {
-      duration = std::chrono::seconds(signed_n);
-    }
+  const absl::string_view::iterator digits_end = c_find_if_not(s, &absl::ascii_isdigit);
+  const size_t digits_length = digits_end - s.begin();
+  if (digits_length == 0) {
+    return SystemTime::duration::zero();
   }
-  if (!s.empty()) {
-    if (isdigit(s[0])) {
-      // uint64_t overflow detected (ie. string contains digits but they were
-      // not consumed). In order to determine if this is a number, and we should
-      // return max(), or if contains non-digit characters and we
-      // should return zero(), we need to read the characters that failed to
-      // parse to the next comma and check if there are non-digits.  In
-      // practice, this should almost never happen.
-      std::size_t nondigit = s.find_first_not_of("0123456789");
-      if (nondigit == std::string::npos || s[nondigit] == ',') {
-        // All digits, it's an overflow
-        duration = SystemTime::duration::max();
-      } else {
-        // Not all digits, it's an invalid string
-        duration = SystemTime::duration::zero();
-      }
-    } else if (s[0] != ',') {
-      duration = SystemTime::duration::zero();
-    }
-  }
-
-  return duration;
+  const absl::string_view digits(s.begin(), digits_length);
+  s.remove_prefix(digits_length);
+  int64_t num;
+  return absl::SimpleAtoi(digits, &num) ? std::chrono::seconds(num) : SystemTime::duration::max();
 }
 
 // Returns the effective max-age represented by cache-control. If the result is
@@ -167,6 +143,10 @@ SystemTime::duration effectiveMaxAge(absl::string_view cache_control) {
       }
     } else if (!found_s_maxage && ConsumePrefix(&cache_control, "max-age=")) {
       max_age = eatLeadingDuration(cache_control);
+      if (!cache_control.empty() && cache_control[0] != ',') {
+        // Unexpected text at end of directive
+        return SystemTime::duration::zero();
+      }
     } else if (eatToken(cache_control)) {
       // Unknown directive--ignore.
       if (ConsumePrefix(&cache_control, "=")) {
