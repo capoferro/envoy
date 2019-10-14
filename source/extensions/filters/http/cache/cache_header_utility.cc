@@ -16,10 +16,6 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Cache {
 
-namespace {
-const std::string bytes_{"bytes"};
-}
-
 std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& request_headers) {
   // Range headers are only valid on GET requests so make sure we don't get here
   // with another type of request.
@@ -44,7 +40,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
     ENVOY_LOG(debug, "Excessively long range header. Ignoring.");
     return {};
   }
-  if (!absl::ConsumePrefix(&range, bytes_) || !absl::ConsumePrefix(&range, "=")) {
+  if (!absl::ConsumePrefix(&range, "bytes=")) {
     ENVOY_LOG(debug, "Invalid range header. range-unit not correctly specified.");
     return {};
   }
