@@ -326,7 +326,7 @@ protected:
  * Convenience macro to get logger.
  *
  * Note: Logging macros are only available in classes derived from
- * Logger::Loggable. For ad-hoc logging, use
+ * Logger::Loggable. For ad-hoc logging, without Loggable, use
  * ENVOY_LOG_MISC(debug, FORMATSTRING, ...).
  */
 #define ENVOY_LOGGER() __log_do_not_use_read_comment()
