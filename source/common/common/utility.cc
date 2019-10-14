@@ -487,10 +487,10 @@ std::string StringUtil::removeCharacters(const absl::string_view& str,
 }
 
 absl::optional<uint64_t> StringUtil::readAndRemoveLeadingDigits(absl::string_view& s) {
-  const char* p = s.data();
-  const char* limit = p + s.size();
   uint64_t val = 0;
-  while (p < limit) {
+  const char* p = s.data();
+  size_t digits_read = 0;
+  for (; digits_read < s.size(); ++digits_read) {
     const char c = *p;
     if (c < '0' || c > '9') {
       break;
