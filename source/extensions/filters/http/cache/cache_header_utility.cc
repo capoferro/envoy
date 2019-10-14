@@ -19,8 +19,8 @@ namespace Cache {
 std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& request_headers) {
   // Range headers are only valid on GET requests so make sure we don't get here
   // with another type of request.
-  ASSERT(request_headers.Method() != nullptr &&
-         request_headers.Method()->value() == Http::Headers::get().MethodValues.Get);
+  ASSERT(request_headers.Method() != nullptr);
+  ASSERT(request_headers.Method()->value() == Http::Headers::get().MethodValues.Get);
 
   // Multiple instances of range headers are considered invalid.
   // https://tools.ietf.org/html/rfc7230#section-3.2.2
