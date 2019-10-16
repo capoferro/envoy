@@ -31,17 +31,17 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
   if (range_headers.size() == 1) {
     range = range_headers.front();
   } else {
-    ENVOY_LOG(debug, "Multiple range headers provided in request. Ignoring.");
+    ENVOY_LOG(debug, "Multiple range headers provided in request. Ignoring all range headers.");
     return {};
   }
 
   // Prevent DoS attacks with excessively long range strings.
   if (range.length() > 100) {
-    ENVOY_LOG(debug, "Excessively long range header. Ignoring.");
+    ENVOY_LOG(debug, "Excessively long range header. Ignoring range header.");
     return {};
   }
   if (!absl::ConsumePrefix(&range, "bytes=")) {
-    ENVOY_LOG(debug, "Invalid range header. range-unit not correctly specified.");
+    ENVOY_LOG(debug, "Invalid range header. range-unit not correctly specified. Ignoring range header.");
     return {};
   }
 
@@ -52,6 +52,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
       first = UINT64_MAX;
     }
     if (!absl::ConsumePrefix(&range, "-")) {
+      ENVOY_LOG(debug, "Invalid format for range header: missing range-end. Ignoring range header.")
       ranges.clear();
       break;
     }
@@ -61,11 +62,12 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
       first = UINT64_MAX;
     }
     if (first != UINT64_MAX && last < first) {
+      ENVOY_LOG(debug, "Invalid format for range header: range-start and range-end out of order. Ignoring range header.");
       ranges.clear();
       break;
     }
     if (!range.empty() && !absl::ConsumePrefix(&range, ",")) {
-      ENVOY_LOG(debug, "Unexpected characters at the end of range header.");
+      ENVOY_LOG(debug, "Unexpected characters after byte range in range header. Ignoring range header.");
       ranges.clear();
       break;
     }
