@@ -42,7 +42,7 @@ class CacheHeaderUtility : Logger::Loggable<Logger::Id::cache> {
 public:
   // Get ranges defined by range-related headers in the provided request
   // headers.
-  static std::vector<RawByteRange> getRanges(const Http::HeaderMap& request_headers);
+  static std::vector<RawByteRange> getRanges(const Http::HeaderMap& request_headers, int byte_range_parse_limit);
 };
 
 } // namespace Cache

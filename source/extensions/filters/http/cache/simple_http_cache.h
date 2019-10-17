@@ -23,16 +23,19 @@ private:
 
 public:
   // HttpCache
+  SimpleHttpCache(int byte_range_parse_limit);
   LookupContextPtr makeLookupContext(LookupRequest&& request) override;
   InsertContextPtr makeInsertContext(LookupContextPtr&& lookup_context) override;
   void updateHeaders(LookupContextPtr&& lookup_context,
                      Http::HeaderMapPtr&& response_headers) override;
   CacheInfo cacheInfo() const override;
+  int byteRangeParseLimit() const override;
 
   Entry lookup(const LookupRequest& request);
   void insert(const Key& key, Http::HeaderMapPtr&& response_headers, std::string&& body);
 
   mutable Thread::MutexBasicLockable mutex_;
+  int byte_range_parse_limit_;
   absl::flat_hash_map<Key, Entry, MessageUtil, MessageUtil> map_ GUARDED_BY(mutex_);
 };
 

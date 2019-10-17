@@ -16,7 +16,7 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Cache {
 
-std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& request_headers) {
+std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& request_headers, int byte_range_parse_limit) {
   // Range headers are only valid on GET requests so make sure we don't get here
   // with another type of request.
   ASSERT(request_headers.Method() != nullptr);
@@ -35,24 +35,25 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
     return {};
   }
 
-  // Prevent DoS attacks with excessively long range strings.
-  if (range.length() > 100) {
-    ENVOY_LOG(debug, "Excessively long range header. Ignoring range header.");
-    return {};
-  }
   if (!absl::ConsumePrefix(&range, "bytes=")) {
     ENVOY_LOG(debug, "Invalid range header. range-unit not correctly specified. Ignoring range header.");
     return {};
   }
 
   std::vector<RawByteRange> ranges;
+  int byte_ranges_parsed = 0;
   while (!range.empty()) {
+    if (byte_ranges_parsed >= byte_range_parse_limit) {
+      ENVOY_LOG(debug, "Reached the configured byte range parse limit ({}), but there are still byte ranges remaining. Ignoring range header.", byte_range_parse_limit);
+      ranges.clear();
+      break;
+    }
     absl::optional<uint64_t> first = StringUtil::readAndRemoveLeadingDigits(range);
     if (!first) {
       first = UINT64_MAX;
     }
     if (!absl::ConsumePrefix(&range, "-")) {
-      ENVOY_LOG(debug, "Invalid format for range header: missing range-end. Ignoring range header.")
+      ENVOY_LOG(debug, "Invalid format for range header: missing range-end. Ignoring range header.");
       ranges.clear();
       break;
     }
@@ -73,6 +74,7 @@ std::vector<RawByteRange> CacheHeaderUtility::getRanges(const Http::HeaderMap& r
     }
 
     ranges.push_back(RawByteRange(first.value(), last.value()));
+    ++byte_ranges_parsed;
   }
 
   return ranges;

@@ -15,16 +15,16 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Cache {
 
-LookupRequest::LookupRequest(const Http::HeaderMap& request_headers, SystemTime timestamp)
+LookupRequest::LookupRequest(const Http::HeaderMap& request_headers, SystemTime timestamp, int byte_range_parse_limit) // TODO pass config object here?
     : timestamp_(timestamp),
       request_cache_control_(request_headers.CacheControl() == nullptr
                                  ? ""
                                  : request_headers.CacheControl()->value().getStringView()) {
   ASSERT(request_headers.Path(), "Can't form cache lookup key for malformed Http::HeaderMap "
                                  "with null Path.");
-  ASSERT(request_headers.Scheme(), "Can't form cache lookup key for malformed Http::HeaderMap "
+  ASSERT(request_headers.Scheme(), "Can't form cache lookup key for malformed Http::HeaderMap"
                                    "with null Scheme.");
-  ASSERT(request_headers.Host(), "Can't form cache lookup key for malformed Http::HeaderMap "
+  ASSERT(request_headers.Host(), "Can't form cache lookup key for malformed Http::HeaderaMap "
                                  "with null Host.");
   const Http::HeaderString& scheme = request_headers.Scheme()->value();
   const auto& scheme_values = Http::Headers::get().SchemeValues;
@@ -32,7 +32,7 @@ LookupRequest::LookupRequest(const Http::HeaderMap& request_headers, SystemTime 
   // TODO(toddmgreer) Let config determine whether to include scheme, host, and
   // query params.
   // TODO(toddmgreer) get cluster name.
-  request_range_spec_ = CacheHeaderUtility::getRanges(request_headers);
+  request_range_spec_ = CacheHeaderUtility::getRanges(request_headers, byte_range_parse_limit);
   key_.set_cluster_name("cluster_name_goes_here");
   key_.set_host(std::string(request_headers.Host()->value().getStringView()));
   key_.set_path(std::string(request_headers.Path()->value().getStringView()));

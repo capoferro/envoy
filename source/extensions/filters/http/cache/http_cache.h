@@ -110,7 +110,7 @@ public:
   using HeaderVector = std::vector<Http::HeaderEntry>;
 
   // Prereq: request_headers's Path(), Scheme(), and Host() are nonnull.
-  LookupRequest(const Http::HeaderMap& request_headers, SystemTime timestamp);
+  LookupRequest(const Http::HeaderMap& request_headers, SystemTime timestamp, int byte_range_parse_limit); // TODO: discuss API
 
   // Caches may modify the key according to local needs, though care must be
   // taken to ensure that meaningfully distinct responses have distinct keys.
@@ -147,6 +147,7 @@ private:
   std::vector<RawByteRange> request_range_spec_;
   SystemTime timestamp_;
   HeaderVector vary_headers_;
+  int byte_range_limit_;
   const std::string request_cache_control_;
 };
 
@@ -247,6 +248,10 @@ public:
   // Returns statically known information about a cache.
   virtual CacheInfo cacheInfo() const PURE;
 
+  // Returns configured limit on number of byte ranges that are acceptible in a
+  // range header TODO: where should this live?
+  virtual int byteRangeParseLimit() const PURE;
+
   virtual ~HttpCache() = default;
 };
 
@@ -259,6 +264,7 @@ public:
   // Returns an HttpCache that will remain valid indefinitely (at least as long
   // as the calling CacheFilter).
   virtual HttpCache& getCache() PURE;
+
   virtual ~HttpCacheFactory() = default;
 
 private:

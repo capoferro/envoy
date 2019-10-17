@@ -84,6 +84,7 @@ private:
   Key key_;
   Http::HeaderMapImplPtr response_headers_;
   SimpleHttpCache& cache_;
+  int32 byte_range_limit_;
   Buffer::OwnedImpl body_;
   bool committed_ = false;
 };
@@ -99,6 +100,9 @@ void SimpleHttpCache::updateHeaders(LookupContextPtr&& lookup_context,
   ASSERT(response_headers);
   // TODO(toddmgreer) Support updating headers.
   ASSERT(false);
+}
+
+SimpleHttpCache::SimpleHttpCache(envoy::config::filter::http::cache::v2alpha::Cache& config) : HttpCache(), byte_range_parse_limit_(config.byte_range_parse_limit) {
 }
 
 SimpleHttpCache::Entry SimpleHttpCache::lookup(const LookupRequest& request) {

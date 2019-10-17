@@ -44,4 +44,7 @@ message Cache {
     repeated string query_string_keys = 4;
   }
   KeyCreatorParams key_creator_params = 3;
+
+  // The number of byte ranges that will be parsed before giving up in a range header.
+  int32 byte_ranges_limit = 4;
 }

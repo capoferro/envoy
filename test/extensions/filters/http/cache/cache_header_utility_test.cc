@@ -22,7 +22,7 @@ Http::TestHeaderMapImpl makeTestHeaderMap(std::string rangeValue) {
 
 TEST(CacheHeaderUtilityTest, getRanges) {
   Http::TestHeaderMapImpl headers{{":method", "GET"}, {"range", "bytes=0-4"}};
-  auto result_vector = CacheHeaderUtility::getRanges(headers);
+  auto result_vector = CacheHeaderUtility::getRanges(headers, 1);
   ASSERT_EQ(1, result_vector.size());
   auto result = result_vector.front();
   ASSERT_EQ(0, result.firstBytePos());
@@ -65,8 +65,8 @@ INSTANTIATE_TEST_SUITE_P(
                     "bytes=1-2,3-4a",
                     "bytes=1-2,3-4-5",
                     "bytes=1-2,3-4,a",
-                    // excessively long string
-                    "bytes=1000-1000,1001-1001,1002-1002,1003-1003,1004-1004,1005-1005,1006-1006,1007-1007,1008-1008,1000-",
+                    // too many byte ranges
+                    "bytes=0-1,1-2,2-3,3-4,4-5,5-6",
                     // UINT64_MAX-UINT64_MAX+1
                     "bytes=18446744073709551615-18446744073709551616",
                     // UINT64_MAX+1-UINT64_MAX+2
@@ -74,12 +74,17 @@ INSTANTIATE_TEST_SUITE_P(
 // clang-format on
 
 TEST_P(ParseInvalidRangeHeaderTest, InvalidRangeReturnsEmpty) {
-  auto result_vector = CacheHeaderUtility::getRanges(range());
+  auto result_vector = CacheHeaderUtility::getRanges(range(), 5);
+  ASSERT_EQ(0, result_vector.size());
+}
+
+TEST(CacheHeaderUtilityTest, parseRangeHeaderValueZero) {
+  auto result_vector = CacheHeaderUtility::getRanges(makeTestHeaderMap("bytes=1-2"), 0);
   ASSERT_EQ(0, result_vector.size());
 }
 
 TEST(CacheHeaderUtilityTest, parseRangeHeaderValue) {
-  auto result_vector = CacheHeaderUtility::getRanges(makeTestHeaderMap("bytes=500-999"));
+  auto result_vector = CacheHeaderUtility::getRanges(makeTestHeaderMap("bytes=500-999"), 10);
   ASSERT_EQ(1, result_vector.size());
   auto result = result_vector.front();
   ASSERT_EQ(500, result.firstBytePos());
@@ -87,14 +92,14 @@ TEST(CacheHeaderUtilityTest, parseRangeHeaderValue) {
 }
 
 TEST(CacheHeaderUtilityTest, getRangesSuffix) {
-  auto result_vector = CacheHeaderUtility::getRanges(makeTestHeaderMap("bytes=-500"));
+  auto result_vector = CacheHeaderUtility::getRanges(makeTestHeaderMap("bytes=-500"), 10);
   ASSERT_EQ(1, result_vector.size());
   auto result = result_vector.front();
   ASSERT_EQ(500, result.suffixLength());
 }
 
 TEST(CacheHeaderUtilityTest, getRangesSuffixAlt) {
-  auto result_vector = CacheHeaderUtility::getRanges(makeTestHeaderMap("bytes=500-"));
+  auto result_vector = CacheHeaderUtility::getRanges(makeTestHeaderMap("bytes=500-"), 10);
   ASSERT_EQ(1, result_vector.size());
   auto result = result_vector.front();
   ASSERT_EQ(500, result.suffixLength());
@@ -102,7 +107,7 @@ TEST(CacheHeaderUtilityTest, getRangesSuffixAlt) {
 
 TEST(CacheHeaderUtilityTest, getRangesMultipleRanges) {
   auto result_vector =
-      CacheHeaderUtility::getRanges(makeTestHeaderMap("bytes=10-20,30-40,50-50,-1"));
+      CacheHeaderUtility::getRanges(makeTestHeaderMap("bytes=10-20,30-40,50-50,-1"), 10);
   ASSERT_EQ(4, result_vector.size());
 
   ASSERT_EQ(10, result_vector[0].firstBytePos());
@@ -120,8 +125,14 @@ TEST(CacheHeaderUtilityTest, getRangesMultipleRanges) {
 TEST(CacheHeaderUtilityTest, parseLongRangeHeaderValue) {
   auto result_vector = CacheHeaderUtility::getRanges(
       makeTestHeaderMap("bytes=1000-1000,1001-1001,1002-1002,1003-1003,1004-1004,1005-1005,1006-"
-                        "1006,1007-1007,1008-1008,100-"));
+                        "1006,1007-1007,1008-1008,100-"), 10);
   ASSERT_EQ(10, result_vector.size());
+}
+
+TEST(CacheHeaderUtilityTest, parseSomeOfRangeHeaderValue) {
+  auto result_vector = CacheHeaderUtility::getRanges(
+      makeTestHeaderMap("bytes=1000-1000,1001-1001"), 1);
+  ASSERT_EQ(0, result_vector.size());
 }
 
 TEST(CacheHeaderUtilityTest, parseUint64MaxBytes) {
@@ -129,7 +140,7 @@ TEST(CacheHeaderUtilityTest, parseUint64MaxBytes) {
   // Note: UINT64_MAX is a sentry value for suffixes in the first value, so we
   // do not support UINT64_MAX as a first bytes value.
   auto result_vector = CacheHeaderUtility::getRanges(
-      makeTestHeaderMap("bytes=18446744073709551614-18446744073709551615"));
+      makeTestHeaderMap("bytes=18446744073709551614-18446744073709551615"), 1);
   ASSERT_EQ(1, result_vector.size());
   ASSERT_EQ(18446744073709551614UL, result_vector[0].firstBytePos());
   ASSERT_EQ(18446744073709551615UL, result_vector[0].lastBytePos());

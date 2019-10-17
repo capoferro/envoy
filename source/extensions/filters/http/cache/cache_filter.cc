@@ -61,7 +61,7 @@ Http::FilterHeadersStatus CacheFilter::decodeHeaders(Http::HeaderMap& headers, b
     return Http::FilterHeadersStatus::Continue;
   }
   ASSERT(decoder_callbacks_);
-  lookup_ = cache_.makeLookupContext(LookupRequest(headers, time_source_.systemTime()));
+  lookup_ = cache_.makeLookupContext(LookupRequest(headers, time_source_.systemTime(), cache_.byteRangeParseLimit()));
   ASSERT(lookup_);
 
   CacheFilterSharedPtr self = shared_from_this();
